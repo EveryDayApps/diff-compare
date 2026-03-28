@@ -41,17 +41,47 @@ function computeWordDiff(oldLine: string, newLine: string): { oldWords: DiffWord
   return { oldWords, newWords }
 }
 
+export interface DiffOptions {
+  ignoreWhitespace?: boolean
+  ignoreCase?: boolean
+  ignoreEmptyLines?: boolean
+  ignoreLineEndings?: boolean
+}
+
+function preprocessText(text: string, options: DiffOptions): string {
+  let result = text
+
+  // Normalize line endings first
+  if (options.ignoreLineEndings) {
+    result = result.replace(/\r\n/g, '\n').replace(/\r/g, '\n')
+  }
+
+  let lines = result.split('\n')
+
+  if (options.ignoreEmptyLines) {
+    lines = lines.filter(l => l.trim() !== '')
+  }
+
+  if (options.ignoreWhitespace) {
+    lines = lines.map(l => l.trim())
+  }
+
+  if (options.ignoreCase) {
+    lines = lines.map(l => l.toLowerCase())
+  }
+
+  return lines.join('\n')
+}
+
 export function computeLineDiff(
   original: string,
   modified: string,
-  ignoreWhitespace = false
+  ignoreWhitespace = false,
+  options: DiffOptions = {}
 ): { lines: DiffLine[]; stats: DiffStats } {
-  const orig = ignoreWhitespace
-    ? original.split('\n').map(l => l.trim()).join('\n')
-    : original
-  const mod = ignoreWhitespace
-    ? modified.split('\n').map(l => l.trim()).join('\n')
-    : modified
+  const mergedOptions: DiffOptions = { ignoreWhitespace, ...options }
+  const orig = preprocessText(original, mergedOptions)
+  const mod = preprocessText(modified, mergedOptions)
 
   const changes = Diff.diffLines(orig, mod)
 

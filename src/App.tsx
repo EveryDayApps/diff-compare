@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback, useEffect } from 'react'
-import { Maximize2, Minimize2, Map, AlignLeft } from 'lucide-react'
+import { Maximize2, Minimize2, AlignLeft } from 'lucide-react'
 import { useTheme } from './hooks/useTheme'
 import { computeLineDiff, computeSideBySide } from './lib/diff-utils'
 import { Toolbar, type ViewMode } from './components/Toolbar'
@@ -7,6 +7,7 @@ import { DiffStatsBar } from './components/DiffStats'
 import { EditorPanel } from './components/EditorPanel'
 import { UnifiedDiffViewer, SideBySideDiffViewer } from './components/DiffViewer'
 import { AnimationModal } from './components/AnimationModal'
+import { DiffSettings, type DiffSettingsState } from './components/DiffSettings'
 import { cn } from './lib/utils'
 
 // @ts-ignore - Vite specific
@@ -24,10 +25,15 @@ export default function App() {
   const [modifiedFileName, setModifiedFileName] = useState<string>()
 
   const [viewMode, setViewMode] = useState<ViewMode>('split')
-  const [ignoreWhitespace, setIgnoreWhitespace] = useState(false)
+  const [diffSettings, setDiffSettings] = useState<DiffSettingsState>({
+    ignoreWhitespace: false,
+    ignoreCase: false,
+    ignoreEmptyLines: false,
+    ignoreLineEndings: false,
+    showMinimap: false,
+  })
   const [showAnimation, setShowAnimation] = useState(false)
   const [isExpanded, setIsExpanded] = useState(false)
-  const [showMinimap, setShowMinimap] = useState(false)
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -48,8 +54,8 @@ export default function App() {
   }, [])
 
   const { lines, stats } = useMemo(
-    () => computeLineDiff(original, modified, ignoreWhitespace),
-    [original, modified, ignoreWhitespace]
+    () => computeLineDiff(original, modified, diffSettings.ignoreWhitespace, diffSettings),
+    [original, modified, diffSettings]
   )
 
   const { left: leftLines, right: rightLines } = useMemo(
@@ -186,38 +192,9 @@ export default function App() {
                 <span>Split</span>
               </button>
             </div>
-            <div className={cn('w-px h-4', isDark ? 'bg-surface-border' : 'bg-gray-200')} />
-            <button
-              id="toggle-whitespace-diff"
-              onClick={() => setIgnoreWhitespace(!ignoreWhitespace)}
-              className={cn(
-                'px-2 py-1 rounded-md text-xs font-medium transition-all duration-150 flex items-center gap-1',
-                ignoreWhitespace
-                  ? isDark ? 'bg-white/10 text-white' : 'bg-gray-100 text-gray-900'
-                  : isDark ? 'text-surface-muted hover:text-white hover:bg-white/5' : 'text-gray-400 hover:text-gray-700 hover:bg-gray-100'
-              )}
-              title={ignoreWhitespace ? 'Stop ignoring whitespace' : 'Ignore whitespace'}
-            >
-              <span className={cn(
-                'w-1.5 h-1.5 rounded-full transition-colors',
-                ignoreWhitespace ? (isDark ? 'bg-white' : 'bg-gray-700') : isDark ? 'bg-surface-muted' : 'bg-gray-300'
-              )} />
-              Ignore whitespace
-            </button>
+
           </div>
           <div className="flex items-center gap-2">
-            <button
-              onClick={() => setShowMinimap(!showMinimap)}
-              className={cn(
-                "flex items-center gap-1.5 px-2 py-1 text-xs font-medium rounded transition-colors border",
-                isDark 
-                  ? "text-surface-muted hover:text-white hover:bg-surface-raised border-transparent hover:border-surfaceLight-border/20 bg-surface" 
-                  : "text-gray-500 hover:text-gray-900 border-transparent hover:bg-gray-50 bg-white"
-              )}
-              title={showMinimap ? "Hide Minimap" : "Show Minimap"}
-            >
-              <Map size={13} /> Minimap
-            </button>
             <button
               onClick={() => setIsExpanded(!isExpanded)}
               className={cn(
@@ -250,6 +227,11 @@ export default function App() {
               </>
             )}
           </button>
+            <DiffSettings
+              settings={diffSettings}
+              onChange={setDiffSettings}
+              isDark={isDark}
+            />
           </div>
         </div>
 
@@ -260,13 +242,13 @@ export default function App() {
           )}
         >
           {viewMode === 'unified' ? (
-            <UnifiedDiffViewer lines={lines} wrapLines={true} showMinimap={showMinimap} />
+            <UnifiedDiffViewer lines={lines} wrapLines={true} showMinimap={diffSettings.showMinimap} />
           ) : (
             <SideBySideDiffViewer
               leftLines={leftLines}
               rightLines={rightLines}
               wrapLines={true}
-              showMinimap={showMinimap}
+              showMinimap={diffSettings.showMinimap}
             />
           )}
         </div>
