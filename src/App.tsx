@@ -1,7 +1,8 @@
-import { AlignLeft, Maximize2, Minimize2} from 'lucide-react'
+import { AlignLeft, Maximize2, Minimize2, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AnimationModal } from './components/AnimationModal'
 import { DiffSettings, type DiffSettingsState } from './components/DiffSettings'
+import { DiffStatsBar } from './components/DiffStats'
 import { SideBySideDiffViewer, UnifiedDiffViewer } from './components/DiffViewer'
 import { EditorPanel } from './components/EditorPanel'
 import { Toaster } from './components/Toaster'
@@ -35,6 +36,26 @@ export default function App() {
   })
   const [showAnimation, setShowAnimation] = useState(false)
   const [isExpanded, setIsExpanded] = useState(false)
+  const [isMaximized, setIsMaximized] = useState(false)
+  const isMaximizedRef = useRef(false)
+  const prevExpandedRef = useRef(false)
+
+  const enterMaximize = useCallback(() => {
+    prevExpandedRef.current = isExpanded
+    isMaximizedRef.current = true
+    setIsMaximized(true)
+    setIsExpanded(true)
+    document.documentElement.requestFullscreen?.().catch(() => {})
+  }, [isExpanded])
+
+  const exitMaximize = useCallback(() => {
+    isMaximizedRef.current = false
+    setIsMaximized(false)
+    setIsExpanded(prevExpandedRef.current)
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {})
+    }
+  }, [])
 
   const { toasts, addToast, removeToast } = useToast()
   const handleFileError = useCallback((msg: string) => addToast(msg, 'error'), [addToast])
@@ -80,15 +101,30 @@ export default function App() {
   }
 
   useEffect(() => {
+    const handleFullscreenChange = () => {
+      if (!document.fullscreenElement && isMaximizedRef.current) {
+        isMaximizedRef.current = false
+        setIsMaximized(false)
+        setIsExpanded(prevExpandedRef.current)
+      }
+    }
+    document.addEventListener('fullscreenchange', handleFullscreenChange)
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange)
+  }, [])
+
+  useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'e') {
         e.preventDefault()
         setIsExpanded((prev) => !prev)
       }
+      if (e.key === 'Escape' && isMaximizedRef.current) {
+        exitMaximize()
+      }
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [])
+  }, [exitMaximize])
 
   const shortcutText = useMemo(() => {
     if (typeof navigator !== 'undefined') {
@@ -131,20 +167,23 @@ export default function App() {
         isDark ? 'bg-surface text-white' : 'bg-surfaceLight text-gray-900'
       )}
     >
-      <Toolbar
-        theme={theme}
-        selectedTheme={selectedTheme}
-        onSetTheme={setTheme}
-        onSwap={handleSwap}
-        onReset={handleReset}
-        hasContent={hasContent}
-        stats={stats}
-        shareState={shareState}
-        shareUrl={shareUrl}
-        shareErrorMessage={shareErrorMessage}
-        onShare={handleShare}
-        onStopShare={stopSharing}
-      />
+      {!isMaximized && (
+        <Toolbar
+          theme={theme}
+          selectedTheme={selectedTheme}
+          onSetTheme={setTheme}
+          onSwap={handleSwap}
+          onReset={handleReset}
+          hasContent={hasContent}
+          shareState={shareState}
+          shareUrl={shareUrl}
+          shareErrorMessage={shareErrorMessage}
+          onShare={handleShare}
+          onStopShare={stopSharing}
+          isMaximized={isMaximized}
+          onToggleMaximize={enterMaximize}
+        />
+      )}
 
       {/* Input Panels */}
       <div
@@ -202,9 +241,9 @@ export default function App() {
 
       {/* Diff Output */}
       <div className={cn('flex-1 overflow-hidden px-4 py-3 flex flex-col gap-1')}>
-        <div className="flex justify-between items-center mb-1.5 px-0.5">
+        <div className="flex items-center mb-1.5 px-0.5">
           {/* Left: view mode toggle */}
-          <div className="flex items-center gap-1.5">
+          <div className="flex-1 flex items-center gap-1.5">
             <div
               className={cn(
                 'flex items-center rounded-lg p-0.5 gap-0.5',
@@ -241,9 +280,17 @@ export default function App() {
               </button>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+
+          {/* Center: diff stats */}
+          <div className="flex-1 flex justify-center">
+            {hasContent && stats && <DiffStatsBar stats={stats} theme={theme} />}
+          </div>
+
+          {/* Right: expand/collapse + settings */}
+          <div className="flex-1 flex justify-end items-center gap-2">
             <button
               onClick={() => setIsExpanded(!isExpanded)}
+              style={{ display: isMaximized ? 'none' : undefined }}
               className={cn(
                 "flex items-center gap-1.5 px-2 py-1 text-xs font-medium rounded transition-colors",
               isDark
@@ -279,6 +326,20 @@ export default function App() {
               onChange={setDiffSettings}
               isDark={isDark}
             />
+            {isMaximized && (
+              <button
+                onClick={exitMaximize}
+                title="Exit fullscreen (Esc)"
+                className={cn(
+                  'p-1.5 rounded-md transition-colors duration-150',
+                  isDark
+                    ? 'text-surface-muted hover:text-white hover:bg-white/5'
+                    : 'text-gray-400 hover:text-gray-700 hover:bg-gray-100'
+                )}
+              >
+                <X size={14} />
+              </button>
+            )}
           </div>
         </div>
 

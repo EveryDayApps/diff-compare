@@ -1,10 +1,8 @@
-import { ArrowLeftRight, Palette, RotateCcw } from 'lucide-react'
+import { ArrowLeftRight, Maximize2, Palette, RotateCcw } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { type ShareState } from '../hooks/usePeerShare'
 import { type Theme } from '../hooks/useTheme'
-import { type DiffStats } from '../lib/diff-utils'
 import { cn } from '../lib/utils'
-import { DiffStatsBar } from './DiffStats'
 import { SharePanel } from './SharePanel'
 
 export type ViewMode = 'unified' | 'split'
@@ -16,12 +14,13 @@ interface ToolbarProps {
   onSwap: () => void
   onReset: () => void
   hasContent: boolean
-  stats?: DiffStats | null
   shareState: ShareState
   shareUrl: string | null
   shareErrorMessage: string | null
   onShare: () => void
   onStopShare: () => void
+  isMaximized?: boolean
+  onToggleMaximize?: () => void
 }
 
 export function Toolbar({
@@ -31,12 +30,13 @@ export function Toolbar({
   onSwap,
   onReset,
   hasContent,
-  stats,
   shareState,
   shareUrl,
   shareErrorMessage,
   onShare,
   onStopShare,
+  isMaximized,
+  onToggleMaximize,
 }: ToolbarProps) {
   const isDark = theme !== 'light'
 
@@ -64,12 +64,6 @@ export function Toolbar({
         </span>
       </div>
 
-      {hasContent && stats && (
-        <div className="flex-1 flex justify-center max-w-2xl px-4 min-w-0">
-          <DiffStatsBar stats={stats} theme={theme} />
-        </div>
-      )}
-
       {/* Right Actions */}
       <div className="flex justify-end items-center gap-2 w-48 shrink-0">
         {hasContent && (
@@ -93,6 +87,17 @@ export function Toolbar({
               <RotateCcw size={14} />
             </ToolbarIconButton>
           </>
+        )}
+        {onToggleMaximize && (
+          <ToolbarIconButton
+            id="maximize-btn"
+            onClick={onToggleMaximize}
+            title={isMaximized ? 'Exit fullscreen (Esc)' : 'Maximize view'}
+            active={!!isMaximized}
+            theme={theme}
+          >
+            <Maximize2 size={14} />
+          </ToolbarIconButton>
         )}
         <SharePanel
           shareState={shareState}
