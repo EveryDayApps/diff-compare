@@ -39,7 +39,7 @@
     --scrollbar-track: hsl(0, 0%, 95%);
   }
 
-  .skillz {
+  .void {
     --surface: 30 11% 4%;       /* #0A0908 */
     --surface-raised: 0 0% 6%;  /* #0D0C0C */
     --surface-border: 0 0% 10%; /* #1A1A1A */
@@ -144,10 +144,10 @@
   .ocean .word-added { background-color: hsl(148, 50%, 16%); }
   .ocean .word-removed { background-color: hsl(355, 50%, 20%); }
 
-  .skillz .line-added { background-color: #12eeb315; color: #12eeb3; border-left-color: #12eeb350; }
-  .skillz .line-removed { background-color: #FF808015; color: #FF8080; border-left-color: #FF808050; }
-  .skillz .word-added { background-color: #12eeb330; }
-  .skillz .word-removed { background-color: #FF808030; }
+  .void .line-added { background-color: #12eeb315; color: #12eeb3; border-left-color: #12eeb350; }
+  .void .line-removed { background-color: #FF808015; color: #FF8080; border-left-color: #FF808050; }
+  .void .word-added { background-color: #12eeb330; }
+  .void .word-removed { background-color: #FF808030; }
 
   .light .word-added {
     background-color: hsl(142, 55%, 78%);

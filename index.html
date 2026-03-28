@@ -16,7 +16,7 @@
     <meta name="classification" content="Developer Tools, Productivity, Open Source" />
     <meta name="rating" content="general" />
     <meta name="revisit-after" content="7 days" />
-    <link rel="canonical" href="https://diff-compare.web.app/" />
+    <link rel="canonical" href="https://diffcompare.narayann.dev/" />
 
     <!-- Theme color -->
     <meta name="theme-color" content="#0f1117" />
@@ -24,10 +24,10 @@
 
     <!-- Open Graph / Facebook -->
     <meta property="og:type" content="website" />
-    <meta property="og:url" content="https://diff-compare.web.app/" />
+    <meta property="og:url" content="https://diffcompare.narayann.dev/" />
     <meta property="og:title" content="DiffCompare : Free Online Text & Code Diff Compare Tool" />
     <meta property="og:description" content="Free, minimal, open-source, and ad-free diff tool. Compare text, code, and files instantly. Side-by-side and unified diff views, file upload, diff stats, and animated diff replay. No sign-up required." />
-    <meta property="og:image" content="https://diff-compare.web.app/og-image.png" />
+    <meta property="og:image" content="https://diffcompare.narayann.dev/og-image.png" />
     <meta property="og:image:width" content="1200" />
     <meta property="og:image:height" content="630" />
     <meta property="og:image:alt" content="DiffCompare : Online Diff Compare Tool Screenshot" />
@@ -36,10 +36,12 @@
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:url" content="https://diff-compare.web.app/" />
+    <meta name="twitter:site" content="@narayann7" />
+    <meta name="twitter:creator" content="@narayann7" />
+    <meta name="twitter:url" content="https://diffcompare.narayann.dev/" />
     <meta name="twitter:title" content="DiffCompare : Free Online Text & Code Diff Compare Tool" />
     <meta name="twitter:description" content="Free, minimal, open-source, and ad-free diff tool. Compare text, code, and files instantly. No sign-up. No tracking. 100% free." />
-    <meta name="twitter:image" content="https://diff-compare.web.app/og-image.png" />
+    <meta name="twitter:image" content="https://diffcompare.narayann.dev/og-image.png" />
     <meta name="twitter:image:alt" content="DiffCompare : Online Diff Compare Tool" />
 
     <!-- Favicon / Icons -->
@@ -53,12 +55,26 @@
       "@context": "https://schema.org",
       "@type": "WebApplication",
       "name": "DiffCompare",
-      "url": "https://diff-compare.web.app/",
+      "url": "https://diffcompare.narayann.dev/",
       "description": "A free, minimal, open-source, and ad-free online diff compare tool for comparing text, code, and files side-by-side or in unified view. No sign-up or tracking.",
       "applicationCategory": "DeveloperApplication",
       "operatingSystem": "Any",
       "browserRequirements": "Requires JavaScript",
       "isAccessibleForFree": true,
+      "softwareVersion": "1.0",
+      "datePublished": "2024-01-01",
+      "dateModified": "2026-03-29",
+      "inLanguage": "en",
+      "creator": {
+        "@type": "Person",
+        "name": "narayann7",
+        "url": "https://github.com/narayann7"
+      },
+      "publisher": {
+        "@type": "Organization",
+        "name": "EveryDayApps",
+        "url": "https://github.com/EveryDayApps"
+      },
       "offers": {
         "@type": "Offer",
         "price": "0",
@@ -74,13 +90,16 @@
         "Animated diff replay",
         "Copy diff output",
         "Minimap navigation",
+        "P2P live diff sharing via WebRTC",
         "No sign-up required",
         "No ads",
         "No tracking",
         "Open source",
         "Minimal UI"
       ],
-      "screenshot": "https://diff-compare.web.app/og-image.png"
+      "screenshot": "https://diffcompare.narayann.dev/og-image.png",
+      "codeRepository": "https://github.com/EveryDayApps/diff-compare",
+      "license": "https://opensource.org/licenses/MIT"
     }
     </script>
 
@@ -91,6 +110,26 @@
   </head>
   <body>
     <div id="root"></div>
+    <noscript>
+      <div style="font-family: sans-serif; max-width: 800px; margin: 40px auto; padding: 0 20px;">
+        <h1>DiffCompare — Free Online Diff Tool</h1>
+        <p>DiffCompare is a free, minimal, open-source, and ad-free online tool for comparing text and code. Paste or upload two files to instantly see a side-by-side or unified diff.</p>
+        <h2>Features</h2>
+        <ul>
+          <li>Side-by-side and unified diff views</li>
+          <li>File upload support</li>
+          <li>Diff statistics (added, removed, unchanged lines)</li>
+          <li>Ignore whitespace, case, empty lines, and line endings</li>
+          <li>Multiple color themes (Dark, Light, Dracula, Ocean, Skillz)</li>
+          <li>Animated diff replay</li>
+          <li>P2P live sharing via WebRTC — no server, no sign-in</li>
+          <li>Minimap navigation</li>
+          <li>No ads, no tracking, no sign-up required</li>
+          <li>Open source (MIT License)</li>
+        </ul>
+        <p>Please enable JavaScript to use DiffCompare.</p>
+      </div>
+    </noscript>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

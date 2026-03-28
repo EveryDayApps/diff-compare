@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://diff-compare.web.app/sitemap.xml
+Sitemap: https://diffcompare.narayann.dev/sitemap.xml

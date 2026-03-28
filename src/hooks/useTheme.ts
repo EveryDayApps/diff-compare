@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
 
-export type Theme = 'dark' | 'dracula' | 'ocean' | 'light' | 'skillz'
+export type Theme = 'dark' | 'dracula' | 'ocean' | 'light' | 'void'
 
-const ALL_THEMES: Theme[] = ['dark', 'dracula', 'ocean', 'light', 'skillz']
+const ALL_THEMES: Theme[] = ['dark', 'dracula', 'ocean', 'light', 'void']
 
 const getSystemTheme = (): Theme => {
   if (typeof window === 'undefined') return 'dark'
@@ -21,7 +21,7 @@ export function useTheme() {
   useEffect(() => {
     const applyTheme = () => {
       const root = document.documentElement
-      root.classList.remove('dark', 'dracula', 'ocean', 'light', 'skillz')
+      root.classList.remove('dark', 'dracula', 'ocean', 'light', 'void')
       root.classList.add(selectedTheme)
       localStorage.setItem('diff-theme', selectedTheme)
     }
