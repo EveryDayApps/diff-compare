@@ -1,4 +1,4 @@
-import { ArrowLeftRight, Check, Copy, Palette, RotateCcw } from 'lucide-react'
+import { ArrowLeftRight, Check, Copy, Link2, Palette, RotateCcw } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { type Theme } from '../hooks/useTheme'
 import { type DiffStats } from '../lib/diff-utils'
@@ -17,6 +17,8 @@ interface ToolbarProps {
   hasContent: boolean
   onAnimate?: () => void
   stats?: DiffStats | null
+  onOpenImport: () => void
+  isCommitActive: boolean
 }
 
 export function Toolbar({
@@ -28,6 +30,8 @@ export function Toolbar({
   getDiffText,
   hasContent,
   onAnimate,
+  onOpenImport,
+  isCommitActive,
   stats,
 }: ToolbarProps) {
   const isDark = theme !== 'light'
@@ -122,6 +126,34 @@ export function Toolbar({
             <div className={cn('w-px h-5 mx-0.5', isDark ? 'bg-surface-border' : 'bg-gray-200')} />
           </>
         )}
+
+        {/* Import button */}
+        <div className="relative group flex items-center justify-center">
+          <button
+            id="import-commit-btn"
+            onClick={onOpenImport}
+            className={cn(
+              'relative p-2 rounded-md transition-colors duration-150',
+              isCommitActive
+                ? isDark ? 'text-white bg-white/10' : 'text-gray-900 bg-gray-100'
+                : isDark ? 'text-surface-muted hover:text-white hover:bg-white/5' : 'text-gray-400 hover:text-gray-700 hover:bg-gray-100'
+            )}
+          >
+            <Link2 size={14} />
+            {isCommitActive && (
+              <span className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-green-400" />
+            )}
+          </button>
+          <div className={cn(
+            "absolute top-full mt-2 left-1/2 -translate-x-1/2 pointer-events-none z-50 px-2.5 py-1.5 text-xs font-medium rounded-md opacity-0 scale-95 transition-all duration-200 group-hover:opacity-100 group-hover:scale-100 whitespace-nowrap shadow-xl border",
+            isDark
+              ? "bg-surface-raised border-surface-border text-surface-muted group-hover:text-white"
+              : "bg-white border-surfaceLight-border text-gray-500 group-hover:text-gray-900"
+          )}>
+            {isCommitActive ? 'Change commit' : 'Import commit'}
+          </div>
+        </div>
+        <div className={cn('w-px h-5 mx-0.5', isDark ? 'bg-surface-border' : 'bg-gray-200')} />
 
         {/* Theme Picker */}
         <ThemePicker theme={theme} selectedTheme={selectedTheme || theme} onSetTheme={onSetTheme} />
