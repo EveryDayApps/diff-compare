@@ -34,27 +34,7 @@ export function SharePanel({ shareState, shareUrl, errorMessage, onShare, onStop
     return () => document.removeEventListener('mousedown', handler)
   }, [shareState, onStop])
 
-  // Receiver banner (fixed top)
-  if (shareState === 'receiving' || shareState === 'received') {
-    return (
-      <div
-        className={cn(
-          'fixed top-0 left-0 right-0 z-50 flex items-center justify-center gap-2 py-2 text-sm font-medium transition-colors',
-          shareState === 'receiving'
-            ? 'bg-blue-600 text-white'
-            : 'bg-green-600 text-white'
-        )}
-      >
-        {shareState === 'receiving' ? (
-          <><Loader2 size={14} className="animate-spin" /> Receiving diff...</>
-        ) : (
-          <><Check size={14} /> Diff loaded from peer!</>
-        )}
-      </div>
-    )
-  }
-
-  const isActive = shareState !== 'idle'
+  const isActive = shareState !== 'idle' && shareState !== 'receiving' && shareState !== 'received'
 
   return (
     <div ref={ref} className="relative">

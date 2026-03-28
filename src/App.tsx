@@ -1,13 +1,15 @@
-import { AlignLeft, Maximize2, Minimize2 } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { AlignLeft, Maximize2, Minimize2} from 'lucide-react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AnimationModal } from './components/AnimationModal'
 import { DiffSettings, type DiffSettingsState } from './components/DiffSettings'
 import { SideBySideDiffViewer, UnifiedDiffViewer } from './components/DiffViewer'
 import { EditorPanel } from './components/EditorPanel'
+import { Toaster } from './components/Toaster'
 import { Toolbar, type ViewMode } from './components/Toolbar'
 import { useLocalStorage } from './hooks/useLocalStorage'
-import { usePeerShare } from './hooks/usePeerShare'
+import { usePeerShare, type ShareState } from './hooks/usePeerShare'
 import { useTheme } from './hooks/useTheme'
+import { useToast } from './hooks/useToast'
 import { computeLineDiff, computeSideBySide } from './lib/diff-utils'
 import { cn } from './lib/utils'
 // @ts-expect-error - Vite specific
@@ -34,6 +36,9 @@ export default function App() {
   const [showAnimation, setShowAnimation] = useState(false)
   const [isExpanded, setIsExpanded] = useState(false)
 
+  const { toasts, addToast, removeToast } = useToast()
+  const handleFileError = useCallback((msg: string) => addToast(msg, 'error'), [addToast])
+
   const { shareState, shareUrl, startSharing, stopSharing, errorMessage: shareErrorMessage } = usePeerShare({
     onReceive: (payload) => {
       setOriginal(payload.original)
@@ -43,6 +48,25 @@ export default function App() {
       setDiffSettings(payload.diffSettings)
     },
   })
+
+  // Fire toasts on key share state transitions
+  const prevShareState = useRef<ShareState>('idle')
+  const receivingToastId = useRef<string | null>(null)
+  useEffect(() => {
+    const prev = prevShareState.current
+    prevShareState.current = shareState
+
+    if (shareState === 'receiving' && prev !== 'receiving') {
+      receivingToastId.current = addToast('Receiving diff from peer…', 'info', 0)
+    } else if (shareState === 'received') {
+      if (receivingToastId.current) { removeToast(receivingToastId.current); receivingToastId.current = null }
+      addToast('Diff loaded from peer!', 'success', 4000)
+    } else if (shareState === 'sent') {
+      addToast('Diff sent successfully!', 'success', 3000)
+    } else if (shareState === 'error' && prev !== 'error') {
+      addToast(shareErrorMessage || 'Connection failed.', 'error', 5000)
+    }
+  }, [shareState, shareErrorMessage, addToast, removeToast])
 
   const handleShare = () => {
     startSharing({
@@ -68,7 +92,8 @@ export default function App() {
 
   const shortcutText = useMemo(() => {
     if (typeof navigator !== 'undefined') {
-      return /Mac|iPod|iPhone|iPad/.test(navigator.platform) ? '⌘E' : 'Ctrl+E'
+      const ua = navigator.userAgent
+      return /Mac|iPod|iPhone|iPad/.test(ua) ? '⌘E' : 'Ctrl+E'
     }
     return '⌘E'
   }, [])
@@ -125,8 +150,8 @@ export default function App() {
       <div
         className={cn(
           'grid grid-cols-2 px-4 shrink-0 transition-all duration-500 ease-in-out overflow-hidden',
-          isExpanded 
-            ? 'opacity-0 gap-0 pt-0 pb-0 pointer-events-none' 
+          isExpanded
+            ? 'opacity-0 gap-0 pt-0 pb-0 pointer-events-none'
             : cn('gap-3 pt-4 opacity-100', viewMode === 'unified' ? 'pb-1' : 'pb-3')
         )}
         style={{ height: isExpanded ? '0px' : (viewMode === 'unified' ? '38%' : '46%') }}
@@ -144,8 +169,9 @@ export default function App() {
             setOriginal('')
             setOriginalFileName(undefined)
           }}
-          side="left"
+           side="left"
           theme={theme}
+          onFileError={handleFileError}
         />
         <EditorPanel
           label="Modified"
@@ -162,6 +188,7 @@ export default function App() {
           }}
           side="right"
           theme={theme}
+          onFileError={handleFileError}
         />
       </div>
 
@@ -176,7 +203,7 @@ export default function App() {
       {/* Diff Output */}
       <div className={cn('flex-1 overflow-hidden px-4 py-3 flex flex-col gap-1')}>
         <div className="flex justify-between items-center mb-1.5 px-0.5">
-          {/* Left: view mode toggle + ignore whitespace */}
+          {/* Left: view mode toggle */}
           <div className="flex items-center gap-1.5">
             <div
               className={cn(
@@ -213,15 +240,14 @@ export default function App() {
                 <span>Split</span>
               </button>
             </div>
-
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={() => setIsExpanded(!isExpanded)}
               className={cn(
                 "flex items-center gap-1.5 px-2 py-1 text-xs font-medium rounded transition-colors",
-              isDark 
-                ? "text-surface-muted hover:text-white hover:bg-surface-raised" 
+              isDark
+                ? "text-surface-muted hover:text-white hover:bg-surface-raised"
                 : "text-gray-500 hover:text-gray-900 border hover:bg-gray-50 bg-white"
             )}
             title={isExpanded ? "Collapse View (Cmd/Ctrl + E)" : "Expand View (Cmd/Ctrl + E)"}
@@ -230,7 +256,7 @@ export default function App() {
               <>
                 <Minimize2 size={13} /> Collapse
                 <kbd className={cn(
-                  "ml-1 flex items-center justify-center px-1 py-0.5 rounded font-sans text-[9px] leading-none border", 
+                  "ml-1 flex items-center justify-center px-1 py-0.5 rounded font-sans text-[9px] leading-none border",
                   isDark ? "bg-surface-raised border-surfaceLight-border/20 text-surface-muted" : "bg-gray-100 border-gray-200 text-gray-500"
                 )}>
                   {shortcutText}
@@ -240,7 +266,7 @@ export default function App() {
               <>
                 <Maximize2 size={13} /> Expand
                 <kbd className={cn(
-                  "ml-1 flex items-center justify-center px-1 py-0.5 rounded font-sans text-[9px] leading-none border", 
+                  "ml-1 flex items-center justify-center px-1 py-0.5 rounded font-sans text-[9px] leading-none border",
                   isDark ? "bg-surface-raised border-surfaceLight-border/20 text-surface-muted" : "bg-gray-100 border-gray-200 text-gray-500"
                 )}>
                   {shortcutText}
@@ -284,6 +310,8 @@ export default function App() {
           onClose={() => setShowAnimation(false)}
         />
       )}
+
+      <Toaster toasts={toasts} onRemove={removeToast} isDark={isDark} />
     </div>
   )
 }
