@@ -1,8 +1,8 @@
-import { Copy, Check, RotateCcw, Play, Palette, ArrowLeftRight } from 'lucide-react'
-import { cn } from '../lib/utils'
-import { useState, useRef, useEffect } from 'react'
+import { ArrowLeftRight, Check, Copy, Palette, RotateCcw } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
 import { type Theme } from '../hooks/useTheme'
 import { type DiffStats } from '../lib/diff-utils'
+import { cn } from '../lib/utils'
 import { DiffStatsBar } from './DiffStats'
 
 export type ViewMode = 'unified' | 'split'
@@ -73,7 +73,7 @@ export function Toolbar({
 
       {/* Right Actions */}
       <div className="flex justify-end items-center gap-1.5 w-48 shrink-0">
-        {hasContent && onAnimate && (
+        {/* {hasContent && onAnimate && (
           <button
             id="animate-btn"
             onClick={onAnimate}
@@ -88,7 +88,7 @@ export function Toolbar({
             <Play size={11} className="fill-current" />
             <span>Animate</span>
           </button>
-        )}
+        )} */}
         {hasContent && onAnimate && <div className={cn('w-px h-5 mx-0.5', isDark ? 'bg-surface-border' : 'bg-gray-200')} />}
         {hasContent && (
           <>

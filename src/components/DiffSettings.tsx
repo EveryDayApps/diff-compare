@@ -62,9 +62,10 @@ interface DiffSettingsProps {
   settings: DiffSettingsState
   onChange: (settings: DiffSettingsState) => void
   isDark: boolean
+  animate?: boolean
 }
 
-export function DiffSettings({ settings, onChange, isDark }: DiffSettingsProps) {
+export function DiffSettings({ settings, onChange, isDark, animate = false }: DiffSettingsProps) {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
 
@@ -121,7 +122,7 @@ export function DiffSettings({ settings, onChange, isDark }: DiffSettingsProps) 
         <div
           className={cn(
             'absolute right-0 top-full mt-1.5 w-64 rounded-xl border shadow-xl z-50 overflow-hidden',
-            'animate-settings-in',
+            animate && 'animate-settings-in',
             isDark
               ? 'bg-surface-raised border-surface-border shadow-black/40'
               : 'bg-white border-gray-200 shadow-gray-200/80'
