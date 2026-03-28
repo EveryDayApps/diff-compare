@@ -1,7 +1,8 @@
-import { AlertCircle, Loader2, X } from 'lucide-react'
+import { AlertCircle, KeyRound, Loader2, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
-import { detectPlatform, fetchCommit, type CommitInfo } from '../lib/github-utils'
+import { AuthRequiredError, detectPlatform, fetchCommit, type CommitInfo } from '../lib/github-utils'
 import { cn } from '../lib/utils'
+import { TokensContent } from './TokensModal'
 
 interface CommitImportModalProps {
   onLoad: (commit: CommitInfo) => void
@@ -13,16 +14,29 @@ export function CommitImportModal({ onLoad, onClose, isDark }: CommitImportModal
   const [url, setUrl] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [authError, setAuthError] = useState<string | null>(null)
+  const [view, setView] = useState<'import' | 'tokens'>('import')
+  const [animKey, setAnimKey] = useState(0)
   const inputRef = useRef<HTMLInputElement>(null)
 
+  const switchView = (next: 'import' | 'tokens') => {
+    if (next === view) return
+    if (next === 'import') setAuthError(null)
+    setView(next)
+    setAnimKey(k => k + 1)
+  }
+
   useEffect(() => {
-    inputRef.current?.focus()
+    if (view === 'import') inputRef.current?.focus()
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
+      if (e.key === 'Escape') {
+        if (view === 'tokens') switchView('import')
+        else onClose()
+      }
     }
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [onClose])
+  }, [onClose, view])
 
   const platform = url.trim() ? detectPlatform(url) : null
 
@@ -36,20 +50,24 @@ export function CommitImportModal({ onLoad, onClose, isDark }: CommitImportModal
       onLoad(commit)
       onClose()
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Failed to load commit')
+      if (e instanceof AuthRequiredError) {
+        const p = detectPlatform(trimmed)
+        setAuthError(p === 'github' ? 'A GitHub token is required' : p === 'gitlab' ? 'A GitLab token is required' : 'A token is required')
+        switchView('tokens')
+      } else {
+        setError(e instanceof Error ? e.message : 'Failed to load commit')
+      }
     } finally {
       setLoading(false)
     }
   }
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') handleLoad()
-  }
+  const isTokensView = view === 'tokens'
 
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
-      onClick={(e) => { if (e.target === e.currentTarget) onClose() }}
+      onClick={e => { if (e.target === e.currentTarget) onClose() }}
     >
       <div className={cn(
         'w-full max-w-lg mx-4 rounded-2xl border shadow-2xl',
@@ -62,19 +80,43 @@ export function CommitImportModal({ onLoad, onClose, isDark }: CommitImportModal
         )}>
           <div>
             <h2 className={cn('text-sm font-semibold', isDark ? 'text-white' : 'text-gray-900')}>
-              Import Commit
+              {isTokensView ? 'Access Tokens' : 'Import Commit'}
             </h2>
             <p className={cn('text-xs mt-0.5', isDark ? 'text-white/40' : 'text-gray-400')}>
-              Supports GitHub and GitLab public repositories
+              {isTokensView ? 'Required for private repositories' : 'Supports public and private repositories'}
             </p>
           </div>
-          <div className="flex items-center gap-3">
-            <GitHubIcon className={cn(platform === 'github' ? (isDark ? 'text-white' : 'text-gray-800') : (isDark ? 'text-white/20' : 'text-gray-200'))} />
-            <GitLabIcon className={cn(platform === 'gitlab' ? 'text-orange-400' : (isDark ? 'text-white/20' : 'text-gray-200'))} />
+
+          {/* Icons — equal spacing via gap-1 + consistent p-1.5 on each */}
+          <div className="flex items-center gap-1">
+            <button
+              onClick={() => { switchView('import'); setTimeout(() => inputRef.current?.focus(), 0) }}
+              title="Import commit URL"
+              className={cn(
+                'p-1.5 rounded-md transition-colors',
+                !isTokensView
+                  ? isDark ? 'text-white bg-white/10' : 'text-gray-900 bg-gray-100'
+                  : isDark ? 'text-white/20 hover:text-white hover:bg-white/8' : 'text-gray-300 hover:text-gray-700 hover:bg-gray-100'
+              )}
+            >
+              <LinkIcon />
+            </button>
+            <button
+              onClick={() => switchView(isTokensView ? 'import' : 'tokens')}
+              title={isTokensView ? 'Back to import' : 'Manage access tokens'}
+              className={cn(
+                'p-1.5 rounded-md transition-colors',
+                isTokensView
+                  ? isDark ? 'text-white bg-white/10' : 'text-gray-900 bg-gray-100'
+                  : isDark ? 'text-white/30 hover:text-white hover:bg-white/8' : 'text-gray-300 hover:text-gray-700 hover:bg-gray-100'
+              )}
+            >
+              <KeyRound size={13} />
+            </button>
             <button
               onClick={onClose}
               className={cn(
-                'p-1.5 rounded-md transition-colors ml-1',
+                'p-1.5 rounded-md transition-colors',
                 isDark ? 'text-white/40 hover:text-white hover:bg-white/8' : 'text-gray-400 hover:text-gray-700 hover:bg-gray-100'
               )}
             >
@@ -83,66 +125,69 @@ export function CommitImportModal({ onLoad, onClose, isDark }: CommitImportModal
           </div>
         </div>
 
-        {/* Body */}
-        <div className="px-5 py-4">
-          <div className={cn(
-            'flex items-center gap-2 rounded-lg border px-3 py-2 transition-colors',
-            isDark
-              ? 'bg-surface-raised border-surface-border focus-within:border-white/20'
-              : 'bg-gray-50 border-gray-200 focus-within:border-gray-300'
-          )}>
-            {platform === 'github' && <GitHubIcon className={isDark ? 'text-white/50 shrink-0' : 'text-gray-400 shrink-0'} />}
-            {platform === 'gitlab' && <GitLabIcon className="text-orange-400 shrink-0" />}
-            {!platform && <LinkIcon className={isDark ? 'text-white/25 shrink-0' : 'text-gray-300 shrink-0'} />}
-            <input
-              ref={inputRef}
-              type="text"
-              value={url}
-              onChange={e => { setUrl(e.target.value); setError(null) }}
-              onKeyDown={handleKeyDown}
-              placeholder="https://github.com/owner/repo/commit/abc1234"
-              className={cn(
-                'flex-1 bg-transparent text-sm outline-none min-w-0',
-                isDark ? 'text-white placeholder:text-white/25' : 'text-gray-900 placeholder:text-gray-400'
-              )}
-            />
-          </div>
+        <div key={animKey} className="animate-view-in overflow-hidden">
+          {isTokensView ? (
+            <TokensContent isDark={isDark} authError={authError ?? undefined} />
+          ) : (
+            <>
+              {/* URL input body */}
+              <div className="px-5 py-4">
+                <div className={cn(
+                  'flex items-center gap-2 rounded-lg border px-3 py-2 transition-colors',
+                  isDark
+                    ? 'bg-surface-raised border-surface-border focus-within:border-white/20'
+                    : 'bg-gray-50 border-gray-200 focus-within:border-gray-300'
+                )}>
+                  {platform === 'github' && <GitHubIcon className={isDark ? 'text-white/50 shrink-0' : 'text-gray-400 shrink-0'} />}
+                  {platform === 'gitlab' && <GitLabIcon className="text-orange-400 shrink-0" />}
+                  {!platform && <LinkIcon className={isDark ? 'text-white/25 shrink-0' : 'text-gray-300 shrink-0'} />}
+                  <input
+                    ref={inputRef}
+                    type="text"
+                    value={url}
+                    onChange={e => { setUrl(e.target.value); setError(null) }}
+                    onKeyDown={e => { if (e.key === 'Enter') handleLoad() }}
+                    placeholder="https://github.com/owner/repo/commit/abc1234"
+                    className={cn(
+                      'flex-1 bg-transparent text-sm outline-none min-w-0',
+                      isDark ? 'text-white placeholder:text-white/25' : 'text-gray-900 placeholder:text-gray-400'
+                    )}
+                  />
+                </div>
+                {error && (
+                  <div className="flex items-center gap-1.5 mt-2.5 text-xs text-red-400">
+                    <AlertCircle size={12} className="shrink-0" />
+                    {error}
+                  </div>
+                )}
+              </div>
 
-          {error && (
-            <div className="flex items-center gap-1.5 mt-2.5 text-xs text-red-400">
-              <AlertCircle size={12} className="shrink-0" />
-              {error}
-            </div>
+              {/* Footer */}
+              <div className="flex items-center justify-end gap-2 px-5 pb-5">
+                <button
+                  onClick={onClose}
+                  className={cn(
+                    'px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
+                    isDark ? 'text-white/50 hover:text-white hover:bg-white/8' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'
+                  )}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleLoad}
+                  disabled={loading || !url.trim()}
+                  className={cn(
+                    'flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-semibold transition-all',
+                    'disabled:opacity-40 disabled:cursor-not-allowed',
+                    isDark ? 'bg-white text-gray-900 hover:bg-white/90' : 'bg-gray-900 text-white hover:bg-gray-700'
+                  )}
+                >
+                  {loading && <Loader2 size={11} className="animate-spin" />}
+                  Load Commit
+                </button>
+              </div>
+            </>
           )}
-        </div>
-
-        {/* Footer */}
-        <div className={cn(
-          'flex items-center justify-end gap-2 px-5 pb-5'
-        )}>
-          <button
-            onClick={onClose}
-            className={cn(
-              'px-3 py-1.5 rounded-lg text-xs font-medium transition-colors',
-              isDark ? 'text-white/50 hover:text-white hover:bg-white/8' : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'
-            )}
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleLoad}
-            disabled={loading || !url.trim()}
-            className={cn(
-              'flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-semibold transition-all',
-              'disabled:opacity-40 disabled:cursor-not-allowed',
-              isDark
-                ? 'bg-white text-gray-900 hover:bg-white/90'
-                : 'bg-gray-900 text-white hover:bg-gray-700'
-            )}
-          >
-            {loading && <Loader2 size={11} className="animate-spin" />}
-            Load Commit
-          </button>
         </div>
       </div>
     </div>
@@ -151,7 +196,7 @@ export function CommitImportModal({ onLoad, onClose, isDark }: CommitImportModal
 
 function GitHubIcon({ className }: { className?: string }) {
   return (
-    <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor" className={cn('transition-colors', className)}>
+    <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor" className={className}>
       <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z" />
     </svg>
   )
@@ -159,7 +204,7 @@ function GitHubIcon({ className }: { className?: string }) {
 
 function GitLabIcon({ className }: { className?: string }) {
   return (
-    <svg width="15" height="15" viewBox="0 0 25 24" fill="currentColor" className={cn('transition-colors', className)}>
+    <svg width="15" height="15" viewBox="0 0 25 24" fill="currentColor" className={className}>
       <path d="M24.507 9.5l-.034-.09L21.082.506a.748.748 0 00-1.395.323l-2.096 6.452H7.41L5.314.83a.748.748 0 00-1.395-.323L.582 9.406l-.028.09A5.318 5.318 0 002.17 15.6l.01.007.03.022 4.256 3.188 2.107 1.594 1.28.967a.872.872 0 001.054 0l1.28-.967 2.107-1.594 4.286-3.213.012-.009a5.318 5.318 0 001.6-6.105z" />
     </svg>
   )

@@ -305,6 +305,7 @@ export default function App() {
         />
       )}
 
+
       {/* Diff Output */}
       <div className={cn('flex-1 overflow-hidden px-4 py-3 flex flex-col gap-1')}>
         <div className="flex items-center mb-1.5 px-0.5">

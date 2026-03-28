@@ -1,3 +1,10 @@
+export class AuthRequiredError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'AuthRequiredError'
+  }
+}
+
 export type FileDisplayMode = 'tabs' | 'stacked' | 'single'
 
 export interface CommitFile {
@@ -56,6 +63,19 @@ function countPatchChanges(patch: string): { additions: number; deletions: numbe
   return { additions, deletions }
 }
 
+// ─── Token helpers ─────────────────────────────────────────────────────────
+
+function getGitHubToken(): string | null {
+  try { return localStorage.getItem('gh_token') } catch { return null }
+}
+
+function getGitLabToken(baseUrl: string): string | null {
+  try {
+    const hostname = new URL(baseUrl).hostname
+    return localStorage.getItem(`gl_token_${hostname}`)
+  } catch { return null }
+}
+
 // ─── GitHub ────────────────────────────────────────────────────────────────
 
 function parseGitHubCommitUrl(url: string): { owner: string; repo: string; sha: string } | null {
@@ -71,14 +91,33 @@ async function fetchGitHubCommit(url: string): Promise<CommitInfo> {
   }
 
   const { owner, repo, sha } = parsed
+  const token = getGitHubToken()
   const response = await fetch(
     `https://api.github.com/repos/${owner}/${repo}/commits/${sha}`,
-    { headers: { Accept: 'application/vnd.github.v3+json' } }
+    {
+      headers: {
+        Accept: 'application/vnd.github.v3+json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+    }
   )
 
   if (!response.ok) {
-    if (response.status === 404) throw new Error('Commit not found or repository is private')
-    if (response.status === 403) throw new Error('GitHub API rate limit exceeded — try again in a moment')
+    if (response.status === 404) {
+      if (!token) throw new AuthRequiredError('Repository not found or private. Add a GitHub token to access it.')
+      throw new Error('Commit not found or your token lacks access to this repository')
+    }
+    if (response.status === 403) {
+      const body = await response.json().catch(() => ({}))
+      const msg: string = (body as { message?: string })?.message ?? ''
+      if (msg.includes('API rate limit exceeded')) {
+        throw new AuthRequiredError('GitHub API rate limit exceeded. Add a token for higher limits.')
+      }
+      throw new AuthRequiredError('Access denied. Check your GitHub token has repo scope.')
+    }
+    if (response.status === 401) {
+      throw new AuthRequiredError('Authentication failed. Check your GitHub token.')
+    }
     throw new Error(`GitHub API error (${response.status})`)
   }
 
@@ -134,15 +173,21 @@ async function fetchGitLabCommit(url: string): Promise<CommitInfo> {
   const { baseUrl, projectPath, sha } = parsed
   const encodedPath = encodeURIComponent(projectPath)
   const apiBase = `${baseUrl}/api/v4/projects/${encodedPath}/repository`
+  const token = getGitLabToken(baseUrl)
+  const headers: Record<string, string> = token ? { 'PRIVATE-TOKEN': token } : {}
 
   const [commitRes, diffsRes] = await Promise.all([
-    fetch(`${apiBase}/commits/${sha}`),
-    fetch(`${apiBase}/commits/${sha}/diff`),
+    fetch(`${apiBase}/commits/${sha}`, { headers }),
+    fetch(`${apiBase}/commits/${sha}/diff`, { headers }),
   ])
 
   if (!commitRes.ok) {
-    if (commitRes.status === 404) throw new Error('Commit not found or repository is private')
-    if (commitRes.status === 401 || commitRes.status === 403) throw new Error('Repository requires authentication')
+    if (commitRes.status === 401) throw new AuthRequiredError('This repository requires authentication. Add a GitLab token to access it.')
+    if (commitRes.status === 403) throw new AuthRequiredError('Access denied. Verify your GitLab token has read_repository scope.')
+    if (commitRes.status === 404) {
+      if (!token) throw new AuthRequiredError('Repository not found or private. Add a GitLab token to access it.')
+      throw new Error('Commit not found or your token lacks access to this repository')
+    }
     throw new Error(`GitLab API error (${commitRes.status})`)
   }
 

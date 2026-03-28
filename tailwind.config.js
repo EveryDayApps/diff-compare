@@ -55,6 +55,7 @@ export default {
         'fade-in': 'fadeIn 0.2s ease-in-out',
         'slide-up': 'slideUp 0.25s ease-out',
         'toast-in': 'toastIn 0.22s cubic-bezier(0.34, 1.4, 0.64, 1)',
+        'view-in': 'viewIn 0.18s ease-out',
       },
       keyframes: {
         fadeIn: {
@@ -68,6 +69,10 @@ export default {
         toastIn: {
           '0%': { opacity: '0', transform: 'translateX(16px) scale(0.96)' },
           '100%': { opacity: '1', transform: 'translateX(0) scale(1)' },
+        },
+        viewIn: {
+          '0%': { opacity: '0', transform: 'translateY(4px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
         },
       },
     },
