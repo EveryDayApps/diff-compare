@@ -61,7 +61,7 @@ export function Toolbar({
           <rect x="12" y="16" width="9" height="3" rx="1.5" className="text-red-400" fill="currentColor" />
         </svg>
         <span className={cn('font-semibold text-sm tracking-tight', isDark ? 'text-white' : 'text-gray-900')}>
-          DiffCheck
+          DiffCompare
         </span>
       </div>
 

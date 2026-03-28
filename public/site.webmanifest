@@ -1,6 +1,6 @@
 {
-  "name": "DiffCheck — Online Diff Checker",
-  "short_name": "DiffCheck",
+  "name": "DiffCompare : Online Diff Compare",
+  "short_name": "DiffCompare",
   "description": "Free online tool to compare text, code, and files side-by-side or in unified view.",
   "start_url": "/",
   "display": "standalone",

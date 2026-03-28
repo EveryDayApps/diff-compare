@@ -1,6 +1,6 @@
-# DiffCheck Features
+# DiffCompare Features
 
-Here is a list of features available in the DiffCheck app:
+Here is a list of features available in the DiffCompare app:
 
 - **Multiple Diff Views**: Choose between Split (Side-by-side) and Unified view modes.
 - **File Upload & Editing**: Load text or code files directly or write/paste content into the Original and Modified editor panels.

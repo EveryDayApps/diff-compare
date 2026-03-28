@@ -1,20 +1,20 @@
 <div align="center">
-  <img src="./assets/icon.svg" alt="DiffCheck Icon" width="100"/>
-  <h1>DiffCheck</h1>
+  <img src="./assets/icon.svg" alt="DiffCompare Icon" width="100"/>
+  <h1>DiffCompare</h1>
   <p>A minimal, clean, and responsive tool to compare code and text files seamlessly.</p>
 </div>
 
 <div align="center">
-  <img src="./assets/screenshot.png" alt="DiffCheck Dark Theme" width="100%"/>
+  <img src="./assets/screenshot.png" alt="DiffCompare Dark Theme" width="100%"/>
   <br/>
   <br/>
-  <img src="./assets/screenshot-light.png" alt="DiffCheck Light Theme" width="100%"/>
+  <img src="./assets/screenshot-light.png" alt="DiffCompare Light Theme" width="100%"/>
 </div>
 
 ---
 
 ## ⚡️ Introduction
-**DiffCheck** is a fast, responsive, and highly customizable file diff checker. Built with React and Vite, it's designed to make spotting code and text differences effortless. Whether you want a simple side-by-side view, a unified diff, or an animated replay of changes, DiffCheck offers a delightful developer-focused experience.
+**DiffCompare** is a fast, responsive, and highly customizable file diff checker. Built with React and Vite, it's designed to make spotting code and text differences effortless. Whether you want a simple side-by-side view, a unified diff, or an animated replay of changes, DiffCompare offers a delightful developer-focused experience.
 
 ## 🎯 Features
 - **Multiple Diff Views**: Choose between Split (Side-by-side) and Unified view modes.
