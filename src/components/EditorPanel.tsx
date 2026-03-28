@@ -1,6 +1,7 @@
 import { useRef } from 'react'
 import { Upload, X } from 'lucide-react'
 import { cn } from '../lib/utils'
+import { type Theme } from '../hooks/useTheme'
 
 interface EditorPanelProps {
   label: string
@@ -10,7 +11,7 @@ interface EditorPanelProps {
   onFileLoad?: (name: string, content: string) => void
   onClear?: () => void
   side: 'left' | 'right'
-  theme: 'dark' | 'light'
+  theme: Theme
 }
 
 export function EditorPanel({
@@ -24,7 +25,7 @@ export function EditorPanel({
   theme,
 }: EditorPanelProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const isDark = theme === 'dark'
+  const isDark = theme !== 'light'
 
   const handleFileDrop = (e: React.DragEvent) => {
     e.preventDefault()

@@ -15,8 +15,8 @@ const file1 = rawFiles['../dump/examples/file1.txt'] || ''
 const file2 = rawFiles['../dump/examples/file2.txt'] || ''
 
 export default function App() {
-  const { theme, toggle: toggleTheme } = useTheme()
-  const isDark = theme === 'dark'
+  const { theme, setTheme } = useTheme()
+  const isDark = theme !== 'light'
 
   const [original, setOriginal] = useState(file1)
   const [modified, setModified] = useState(file2)
@@ -86,7 +86,7 @@ export default function App() {
     >
       <Toolbar
         theme={theme}
-        onToggleTheme={toggleTheme}
+        onSetTheme={setTheme}
         viewMode={viewMode}
         onViewModeChange={setViewMode}
         ignoreWhitespace={ignoreWhitespace}

@@ -39,10 +39,10 @@ export default {
           textLight: 'hsl(45, 80%, 35%)',
         },
         surface: {
-          DEFAULT: 'hsl(220, 4%, 6%)',
-          raised: 'hsl(220, 4%, 9%)',
-          border: 'hsl(220, 4%, 14%)',
-          muted: 'hsl(220, 4%, 42%)',
+          DEFAULT: 'hsl(var(--surface) / <alpha-value>)',
+          raised: 'hsl(var(--surface-raised) / <alpha-value>)',
+          border: 'hsl(var(--surface-border) / <alpha-value>)',
+          muted: 'hsl(var(--surface-muted) / <alpha-value>)',
         },
         surfaceLight: {
           DEFAULT: 'hsl(0, 0%, 98%)',

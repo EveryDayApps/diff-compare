@@ -3,14 +3,45 @@
 @tailwind utilities;
 
 @layer base {
-  :root {
+  :root, .dark {
+    --surface: 220 4% 6%;
+    --surface-raised: 220 4% 9%;
+    --surface-border: 220 4% 14%;
+    --surface-muted: 220 4% 42%;
     --scrollbar-thumb: hsl(220, 4%, 22%);
     --scrollbar-track: hsl(220, 4%, 9%);
+  }
+
+  .dracula {
+    --surface: 231 15% 18%;
+    --surface-raised: 232 14% 21%;
+    --surface-border: 233 14% 31%;
+    --surface-muted: 231 10% 55%;
+    --scrollbar-thumb: hsl(232, 14%, 32%);
+    --scrollbar-track: hsl(231, 15%, 18%);
+  }
+
+  .ocean {
+    --surface: 213 32% 10%;
+    --surface-raised: 213 32% 14%;
+    --surface-border: 213 28% 22%;
+    --surface-muted: 213 20% 50%;
+    --scrollbar-thumb: hsl(213, 28%, 28%);
+    --scrollbar-track: hsl(213, 32%, 10%);
   }
 
   .light {
     --scrollbar-thumb: hsl(220, 13%, 78%);
     --scrollbar-track: hsl(0, 0%, 95%);
+  }
+
+  .skillz {
+    --surface: 225 50% 6%;       /* #080C18 */
+    --surface-raised: 227 42% 9%; /* #0D1120 */
+    --surface-border: 230 29% 16%; /* #1E2236 */
+    --surface-muted: 224 17% 43%;  /* #5A6480 */
+    --scrollbar-thumb: #1E2236;
+    --scrollbar-track: #0D1120;
   }
 
   * {
@@ -81,6 +112,12 @@
   .dark .line-added { background-color: hsl(142, 60%, 10%); color: hsl(142, 70%, 60%); border-left-color: hsl(142, 60%, 25%); }
   .dark .line-removed { background-color: hsl(0, 60%, 10%); color: hsl(0, 70%, 65%); border-left-color: hsl(0, 60%, 25%); }
 
+  .dracula .line-added { background-color: hsl(135, 54%, 10%); color: hsl(135, 54%, 58%); border-left-color: hsl(135, 54%, 26%); }
+  .dracula .line-removed { background-color: hsl(0, 60%, 12%); color: hsl(0, 80%, 68%); border-left-color: hsl(0, 60%, 32%); }
+
+  .ocean .line-added { background-color: hsl(148, 50%, 9%); color: hsl(148, 60%, 55%); border-left-color: hsl(148, 50%, 23%); }
+  .ocean .line-removed { background-color: hsl(355, 50%, 11%); color: hsl(355, 65%, 65%); border-left-color: hsl(355, 50%, 28%); }
+
   .light .line-added { background-color: hsl(142, 50%, 93%); color: hsl(142, 55%, 28%); border-left-color: hsl(142, 50%, 60%); }
   .light .line-added .diff-line-number { color: hsl(142, 55%, 38%); }
   .light .line-removed { background-color: hsl(0, 50%, 94%); color: hsl(0, 55%, 38%); border-left-color: hsl(0, 50%, 65%); }
@@ -96,6 +133,17 @@
     @apply rounded px-0.5;
     background-color: hsl(0, 65%, 24%);
   }
+
+  .dracula .word-added { background-color: hsl(135, 54%, 18%); }
+  .dracula .word-removed { background-color: hsl(0, 65%, 24%); }
+
+  .ocean .word-added { background-color: hsl(148, 50%, 16%); }
+  .ocean .word-removed { background-color: hsl(355, 50%, 20%); }
+
+  .skillz .line-added { background-color: #4AE68A15; color: #4AE68A; border-left-color: #4AE68A50; }
+  .skillz .line-removed { background-color: #FF5C7A15; color: #FF5C7A; border-left-color: #FF5C7A50; }
+  .skillz .word-added { background-color: #4AE68A2a; }
+  .skillz .word-removed { background-color: #FF5C7A2a; }
 
   .light .word-added {
     background-color: hsl(142, 55%, 78%);

@@ -1,12 +1,13 @@
-import { Sun, Moon, Copy, Check, RotateCcw, WrapText, AlignLeft, Play } from 'lucide-react'
+import { Copy, Check, RotateCcw, WrapText, AlignLeft, Play, Palette } from 'lucide-react'
 import { cn } from '../lib/utils'
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
+import { type Theme } from '../hooks/useTheme'
 
 export type ViewMode = 'unified' | 'split'
 
 interface ToolbarProps {
-  theme: 'dark' | 'light'
-  onToggleTheme: () => void
+  theme: Theme
+  onSetTheme: (t: Theme) => void
   viewMode: ViewMode
   onViewModeChange: (mode: ViewMode) => void
   ignoreWhitespace: boolean
@@ -21,7 +22,7 @@ interface ToolbarProps {
 
 export function Toolbar({
   theme,
-  onToggleTheme,
+  onSetTheme,
   viewMode,
   onViewModeChange,
   ignoreWhitespace,
@@ -33,7 +34,7 @@ export function Toolbar({
   hasContent,
   onAnimate,
 }: ToolbarProps) {
-  const isDark = theme === 'dark'
+  const isDark = theme !== 'light'
   const [copied, setCopied] = useState(false)
 
   const handleCopy = async () => {
@@ -165,16 +166,8 @@ export function Toolbar({
           </>
         )}
 
-        {/* Theme Toggle */}
-        <ToolbarIconButton
-          id="toggle-theme"
-          onClick={onToggleTheme}
-          title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-          active={false}
-          theme={theme}
-        >
-          {isDark ? <Sun size={14} /> : <Moon size={14} />}
-        </ToolbarIconButton>
+        {/* Theme Picker */}
+        <ThemePicker theme={theme} onSetTheme={onSetTheme} />
       </div>
     </header>
   )
@@ -191,11 +184,11 @@ function ToolbarButton({
   children: React.ReactNode
   active: boolean
   onClick: () => void
-  theme: 'dark' | 'light'
+  theme: Theme
   title?: string
   id?: string
 }) {
-  const isDark = theme === 'dark'
+  const isDark = theme !== 'light'
   return (
     <button
       id={id}
@@ -227,12 +220,12 @@ function ToolbarIconButton({
 }: {
   children: React.ReactNode
   onClick: () => void
-  theme: 'dark' | 'light'
+  theme: Theme
   title?: string
   active: boolean
   id?: string
 }) {
-  const isDark = theme === 'dark'
+  const isDark = theme !== 'light'
   return (
     <button
       id={id}
@@ -264,10 +257,10 @@ function ToggleChip({
   label: string
   active: boolean
   onClick: () => void
-  theme: 'dark' | 'light'
+  theme: Theme
   id?: string
 }) {
-  const isDark = theme === 'dark'
+  const isDark = theme !== 'light'
   return (
     <button
       id={id}
@@ -300,5 +293,96 @@ function SplitIcon() {
       <rect x="0" y="0" width="5.5" height="13" rx="1.5" fill="currentColor" opacity="0.7" />
       <rect x="7.5" y="0" width="5.5" height="13" rx="1.5" fill="currentColor" opacity="0.7" />
     </svg>
+  )
+}
+
+const THEMES: { id: Theme; label: string; swatch: string; desc: string }[] = [
+  { id: 'dark',    label: 'Dark',    swatch: 'hsl(220 4% 14%)',  desc: 'Default dark' },
+  { id: 'dracula', label: 'Dracula', swatch: 'hsl(265 89% 60%)', desc: 'Purple-tinted dark' },
+  { id: 'ocean',   label: 'Ocean',   swatch: 'hsl(213 60% 40%)', desc: 'Deep blue dark' },
+  { id: 'light',   label: 'Light',   swatch: 'hsl(0 0% 90%)',    desc: 'Light mode' },
+  { id: 'skillz',  label: 'Skillz',  swatch: 'hsl(248 100% 71%)', desc: 'Electric dark' },
+]
+
+function ThemePicker({ theme, onSetTheme }: { theme: Theme; onSetTheme: (t: Theme) => void }) {
+  const isDark = theme !== 'light'
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!open) return
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [open])
+
+  const current = THEMES.find(t => t.id === theme)!
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={() => setOpen(o => !o)}
+        title="Switch theme"
+        className={cn(
+          'flex items-center gap-1.5 px-2 py-1.5 rounded-md text-xs font-medium transition-colors duration-150',
+          open
+            ? isDark ? 'bg-white/10 text-white' : 'bg-gray-100 text-gray-900'
+            : isDark ? 'text-surface-muted hover:text-white hover:bg-white/5' : 'text-gray-400 hover:text-gray-700 hover:bg-gray-100'
+        )}
+      >
+        <span
+          className="w-2.5 h-2.5 rounded-full shrink-0 border border-white/20"
+          style={{ background: current.swatch }}
+        />
+        <Palette size={13} />
+      </button>
+
+      {open && (
+        <div
+          className={cn(
+            'absolute right-0 top-full mt-1.5 w-44 rounded-xl border shadow-xl overflow-hidden z-50',
+            isDark
+              ? 'bg-surface-raised border-surface-border'
+              : 'bg-white border-gray-200'
+          )}
+        >
+          <div className={cn('px-3 pt-2.5 pb-1 text-[10px] font-semibold uppercase tracking-widest', isDark ? 'text-surface-muted' : 'text-gray-400')}>
+            Theme
+          </div>
+          {THEMES.map(({ id, label, swatch, desc }) => {
+            const active = theme === id
+            return (
+              <button
+                key={id}
+                onClick={() => { onSetTheme(id); setOpen(false) }}
+                className={cn(
+                  'w-full flex items-center gap-2.5 px-3 py-2 text-left transition-colors duration-100',
+                  active
+                    ? isDark ? 'bg-white/8 text-white' : 'bg-gray-50 text-gray-900'
+                    : isDark ? 'text-white/70 hover:bg-white/5 hover:text-white' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                )}
+              >
+                <span
+                  className="w-4 h-4 rounded-full shrink-0 border border-white/15"
+                  style={{ background: swatch }}
+                />
+                <span className="flex-1 min-w-0">
+                  <span className="block text-xs font-medium leading-none mb-0.5">{label}</span>
+                  <span className={cn('block text-[10px] leading-none', isDark ? 'text-surface-muted' : 'text-gray-400')}>{desc}</span>
+                </span>
+                {active && (
+                  <svg width="12" height="12" viewBox="0 0 12 12" className={isDark ? 'text-white/60' : 'text-gray-500'}>
+                    <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none" />
+                  </svg>
+                )}
+              </button>
+            )
+          })}
+          <div className={cn('h-2', isDark ? '' : '')} />
+        </div>
+      )}
+    </div>
   )
 }

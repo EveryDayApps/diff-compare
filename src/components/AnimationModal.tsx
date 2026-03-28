@@ -6,10 +6,12 @@ import { type DiffLine, type DiffStats } from '../lib/diff-utils'
 const LINE_DELAY_MS = 80   // ms between each line appearing
 const STATS_DELAY_MS = 200 // ms before stats start counting
 
+import { type Theme } from '../hooks/useTheme'
+
 interface AnimationModalProps {
   lines: DiffLine[]
   stats: DiffStats
-  theme: 'dark' | 'light'
+  theme: Theme
   onClose: () => void
 }
 

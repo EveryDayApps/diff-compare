@@ -1,14 +1,15 @@
 import { Plus, Minus, Equal, GitCompare } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { type DiffStats } from '../lib/diff-utils'
+import { type Theme } from '../hooks/useTheme'
 
 interface DiffStatsBarProps {
   stats: DiffStats | null
-  theme: 'dark' | 'light'
+  theme: Theme
 }
 
 export function DiffStatsBar({ stats, theme }: DiffStatsBarProps) {
-  const isDark = theme === 'dark'
+  const isDark = theme !== 'light'
 
   if (!stats) return null
 
@@ -93,11 +94,11 @@ interface StatBadgeProps {
   value: number
   label: string
   colorClass: string
-  theme: 'dark' | 'light'
+  theme: Theme
 }
 
 function StatBadge({ icon, value, label, colorClass, theme }: StatBadgeProps) {
-  const isDark = theme === 'dark'
+  const isDark = theme !== 'light'
   return (
     <div className={cn('flex items-center gap-1', colorClass)}>
       {icon}
