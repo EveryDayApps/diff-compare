@@ -8,6 +8,7 @@ import { DiffSettings, type DiffSettingsState } from './components/DiffSettings'
 import { DiffStatsBar } from './components/DiffStats'
 import { SideBySideDiffViewer, UnifiedDiffViewer } from './components/DiffViewer'
 import { EditorPanel } from './components/EditorPanel'
+import { TabBar } from './components/TabBar'
 import { Toaster } from './components/Toaster'
 import { Toolbar, type ViewMode } from './components/Toolbar'
 import { useLocalStorage } from './hooks/useLocalStorage'
@@ -17,19 +18,86 @@ import { useToast } from './hooks/useToast'
 import { computeLineDiff, computeSideBySide } from './lib/diff-utils'
 import { type CommitInfo, type FileDisplayMode } from './lib/github-utils'
 import { cn } from './lib/utils'
+
 // @ts-expect-error - Vite specific
 const rawFiles = import.meta.glob('../dump/examples/*.txt', { query: '?raw', import: 'default', eager: true }) as Record<string, string>
 const file1 = rawFiles['../dump/examples/file1.txt'] || ''
 const file2 = rawFiles['../dump/examples/file2.txt'] || ''
 
+interface DiffTabState {
+  id: string
+  original: string
+  modified: string
+  originalFileName?: string
+  modifiedFileName?: string
+  commitInfo: CommitInfo | null
+  activeFileIndex: number
+  fileDisplayMode: FileDisplayMode
+}
+
+function createTab(overrides?: Partial<Omit<DiffTabState, 'id'>>): DiffTabState {
+  return {
+    id: `tab-${Date.now()}-${Math.random().toString(36).slice(2, 5)}`,
+    original: '',
+    modified: '',
+    originalFileName: undefined,
+    modifiedFileName: undefined,
+    commitInfo: null,
+    activeFileIndex: 0,
+    fileDisplayMode: 'tabs',
+    ...overrides,
+  }
+}
+
+function getTabLabel(tab: DiffTabState, index: number): string {
+  if (tab.commitInfo) return tab.commitInfo.shortSha
+  if (tab.originalFileName) return tab.originalFileName.split('/').pop() ?? tab.originalFileName
+  if (tab.modifiedFileName) return tab.modifiedFileName.split('/').pop() ?? tab.modifiedFileName
+  return `Diff ${index + 1}`
+}
+
+// Module-level initial tab so both useState calls can share the same ID
+const _initialTab = createTab({ original: file1, modified: file2 })
+
 export default function App() {
   const { theme, selectedTheme, setTheme, isDark } = useTheme()
 
-  const [original, setOriginal] = useState(file1)
-  const [modified, setModified] = useState(file2)
-  const [originalFileName, setOriginalFileName] = useState<string>()
-  const [modifiedFileName, setModifiedFileName] = useState<string>()
+  // ── Tab state ──────────────────────────────────────────────────────────────
+  const [tabs, setTabs] = useState<DiffTabState[]>([_initialTab])
+  const [activeTabId, setActiveTabId] = useState(_initialTab.id)
 
+  const activeTab = tabs.find(t => t.id === activeTabId) ?? tabs[0]
+
+  const updateActiveTab = useCallback((updates: Partial<DiffTabState>) => {
+    setTabs(prev => prev.map(t => t.id === activeTabId ? { ...t, ...updates } : t))
+  }, [activeTabId])
+
+  const addTab = useCallback(() => {
+    const tab = createTab()
+    setTabs(prev => [...prev, tab])
+    setActiveTabId(tab.id)
+  }, [])
+
+  const closeTab = useCallback((id: string) => {
+    setTabs(prev => {
+      if (prev.length === 1) return prev
+      const idx = prev.findIndex(t => t.id === id)
+      const next = prev.filter(t => t.id !== id)
+      if (id === activeTabId) {
+        setActiveTabId(next[Math.max(0, idx - 1)].id)
+      }
+      return next
+    })
+  }, [activeTabId])
+
+  // Destructure active tab for convenience
+  const {
+    original, modified,
+    originalFileName, modifiedFileName,
+    commitInfo, activeFileIndex, fileDisplayMode,
+  } = activeTab
+
+  // ── Global settings ────────────────────────────────────────────────────────
   const [viewMode, setViewMode] = useLocalStorage<ViewMode>('diffViewMode', 'split')
   const [diffSettings, setDiffSettings] = useLocalStorage<DiffSettingsState>('diffSettings', {
     ignoreWhitespace: false,
@@ -42,20 +110,14 @@ export default function App() {
   const [isExpanded, setIsExpanded] = useState(false)
   const [showImportModal, setShowImportModal] = useState(false)
 
-  // GitHub commit mode
-  const [commitInfo, setCommitInfo] = useState<CommitInfo | null>(null)
-  const [activeFileIndex, setActiveFileIndex] = useState(0)
-  const [fileDisplayMode, setFileDisplayMode] = useLocalStorage<FileDisplayMode>('commitFileDisplayMode', 'tabs')
-
+  // ── Commit helpers ─────────────────────────────────────────────────────────
   const handleCommitLoad = (commit: CommitInfo) => {
-    setCommitInfo(commit)
-    setActiveFileIndex(0)
+    updateActiveTab({ commitInfo: commit, activeFileIndex: 0 })
     setIsExpanded(false)
   }
 
   const handleCommitClear = () => {
-    setCommitInfo(null)
-    setActiveFileIndex(0)
+    updateActiveTab({ commitInfo: null, activeFileIndex: 0 })
   }
 
   const commitFileDiffs = useMemo<CommitFileDiff[]>(() => {
@@ -67,6 +129,7 @@ export default function App() {
     })
   }, [commitInfo, diffSettings])
 
+  // ── Maximize ───────────────────────────────────────────────────────────────
   const [isMaximized, setIsMaximized] = useState(false)
   const isMaximizedRef = useRef(false)
   const prevExpandedRef = useRef(false)
@@ -88,20 +151,22 @@ export default function App() {
     }
   }, [])
 
+  // ── Toast / Share ──────────────────────────────────────────────────────────
   const { toasts, addToast, removeToast } = useToast()
   const handleFileError = useCallback((msg: string) => addToast(msg, 'error'), [addToast])
 
   const { shareState, shareUrl, startSharing, stopSharing, errorMessage: shareErrorMessage } = usePeerShare({
     onReceive: (payload) => {
-      setOriginal(payload.original)
-      setModified(payload.modified)
-      setOriginalFileName(payload.originalFileName)
-      setModifiedFileName(payload.modifiedFileName)
+      updateActiveTab({
+        original: payload.original,
+        modified: payload.modified,
+        originalFileName: payload.originalFileName,
+        modifiedFileName: payload.modifiedFileName,
+      })
       setDiffSettings(payload.diffSettings)
     },
   })
 
-  // Fire toasts on key share state transitions
   const prevShareState = useRef<ShareState>('idle')
   const receivingToastId = useRef<string | null>(null)
   useEffect(() => {
@@ -121,16 +186,10 @@ export default function App() {
   }, [shareState, shareErrorMessage, addToast, removeToast])
 
   const handleShare = () => {
-    startSharing({
-      version: 1,
-      original,
-      modified,
-      originalFileName,
-      modifiedFileName,
-      diffSettings,
-    })
+    startSharing({ version: 1, original, modified, originalFileName, modifiedFileName, diffSettings })
   }
 
+  // ── Keyboard / fullscreen ──────────────────────────────────────────────────
   useEffect(() => {
     const handleFullscreenChange = () => {
       if (!document.fullscreenElement && isMaximizedRef.current) {
@@ -147,11 +206,9 @@ export default function App() {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'e') {
         e.preventDefault()
-        setIsExpanded((prev) => !prev)
+        setIsExpanded(prev => !prev)
       }
-      if (e.key === 'Escape' && isMaximizedRef.current) {
-        exitMaximize()
-      }
+      if (e.key === 'Escape' && isMaximizedRef.current) exitMaximize()
     }
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
@@ -159,36 +216,27 @@ export default function App() {
 
   const shortcutText = useMemo(() => {
     if (typeof navigator !== 'undefined') {
-      const ua = navigator.userAgent
-      return /Mac|iPod|iPhone|iPad/.test(ua) ? '⌘E' : 'Ctrl+E'
+      return /Mac|iPod|iPhone|iPad/.test(navigator.userAgent) ? '⌘E' : 'Ctrl+E'
     }
     return '⌘E'
   }, [])
 
+  // ── Diff compute ───────────────────────────────────────────────────────────
   const { lines, stats } = useMemo(
     () => computeLineDiff(original, modified, diffSettings.ignoreWhitespace, diffSettings),
     [original, modified, diffSettings]
   )
 
-  const { left: leftLines, right: rightLines } = useMemo(
-    () => computeSideBySide(lines),
-    [lines]
-  )
+  const { left: leftLines, right: rightLines } = useMemo(() => computeSideBySide(lines), [lines])
 
   const hasContent = commitInfo ? true : (original.trim() !== '' || modified.trim() !== '')
 
   const handleReset = () => {
-    setOriginal('')
-    setModified('')
-    setOriginalFileName(undefined)
-    setModifiedFileName(undefined)
+    updateActiveTab({ original: '', modified: '', originalFileName: undefined, modifiedFileName: undefined })
   }
 
   const handleSwap = () => {
-    setOriginal(modified)
-    setModified(original)
-    setOriginalFileName(modifiedFileName)
-    setModifiedFileName(originalFileName)
+    updateActiveTab({ original: modified, modified: original, originalFileName: modifiedFileName, modifiedFileName: originalFileName })
   }
 
   const commitStats = commitInfo
@@ -201,6 +249,13 @@ export default function App() {
           }), { added: 0, removed: 0, equal: 0, total: 0 })
         : (commitFileDiffs[activeFileIndex]?.stats ?? null))
     : null
+
+  // Tab labels
+  const tabItems = tabs.map((t, i) => ({
+    id: t.id,
+    label: getTabLabel(t, i),
+    isActive: t.id === activeTabId,
+  }))
 
   return (
     <div
@@ -228,6 +283,17 @@ export default function App() {
           onStopShare={stopSharing}
           isMaximized={isMaximized}
           onToggleMaximize={enterMaximize}
+          onNewTab={addTab}
+        />
+      )}
+
+      {/* Tab bar — always shown below toolbar */}
+      {!isMaximized && (tabItems.length > 1) && (
+        <TabBar
+          tabs={tabItems}
+          onSelect={setActiveTabId}
+          onClose={closeTab}
+          isDark={isDark}
         />
       )}
 
@@ -235,7 +301,7 @@ export default function App() {
         <CommitInfoBar
           commitInfo={commitInfo}
           fileDisplayMode={fileDisplayMode}
-          onFileDisplayModeChange={setFileDisplayMode}
+          onFileDisplayModeChange={mode => updateActiveTab({ fileDisplayMode: mode })}
           onClear={handleCommitClear}
           isDark={isDark}
         />
@@ -256,16 +322,10 @@ export default function App() {
             <EditorPanel
               label="Original"
               value={original}
-              onChange={setOriginal}
+              onChange={v => updateActiveTab({ original: v })}
               fileName={originalFileName}
-              onFileLoad={(name, content) => {
-                setOriginalFileName(name)
-                setOriginal(content)
-              }}
-              onClear={() => {
-                setOriginal('')
-                setOriginalFileName(undefined)
-              }}
+              onFileLoad={(name, content) => updateActiveTab({ originalFileName: name, original: content })}
+              onClear={() => updateActiveTab({ original: '', originalFileName: undefined })}
               side="left"
               theme={theme}
               onFileError={handleFileError}
@@ -273,16 +333,10 @@ export default function App() {
             <EditorPanel
               label="Modified"
               value={modified}
-              onChange={setModified}
+              onChange={v => updateActiveTab({ modified: v })}
               fileName={modifiedFileName}
-              onFileLoad={(name, content) => {
-                setModifiedFileName(name)
-                setModified(content)
-              }}
-              onClear={() => {
-                setModified('')
-                setModifiedFileName(undefined)
-              }}
+              onFileLoad={(name, content) => updateActiveTab({ modifiedFileName: name, modified: content })}
+              onClear={() => updateActiveTab({ modified: '', modifiedFileName: undefined })}
               side="right"
               theme={theme}
               onFileError={handleFileError}
@@ -304,7 +358,6 @@ export default function App() {
           isDark={isDark}
         />
       )}
-
 
       {/* Diff Output */}
       <div className={cn('flex-1 overflow-hidden px-4 py-3 flex flex-col gap-1')}>
@@ -422,7 +475,7 @@ export default function App() {
               viewMode={viewMode}
               displayMode={fileDisplayMode}
               activeFileIndex={activeFileIndex}
-              onFileSelect={setActiveFileIndex}
+              onFileSelect={i => updateActiveTab({ activeFileIndex: i })}
               showMinimap={diffSettings.showMinimap}
               isDark={isDark}
             />

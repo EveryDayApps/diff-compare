@@ -1,5 +1,5 @@
 import { DiffStats } from '@/lib/diff-utils'
-import { ArrowLeftRight, Link2, Maximize2, Palette, RotateCcw } from 'lucide-react'
+import { ArrowLeftRight, Link2, Maximize2, Palette, Plus, RotateCcw } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { type ShareState } from '../hooks/usePeerShare'
 import { type Theme } from '../hooks/useTheme'
@@ -26,6 +26,7 @@ interface ToolbarProps {
   onStopShare: () => void
   isMaximized?: boolean
   onToggleMaximize?: () => void
+  onNewTab: () => void
 }
 
 export function Toolbar({
@@ -44,6 +45,7 @@ export function Toolbar({
   onStopShare,
   isMaximized,
   onToggleMaximize,
+  onNewTab,
 }: ToolbarProps) {
   const isDark = theme !== 'light'
 
@@ -106,6 +108,15 @@ export function Toolbar({
             <Maximize2 size={14} />
           </ToolbarIconButton>
         )}
+        <ToolbarIconButton
+          id="new-tab-btn"
+          onClick={onNewTab}
+          title="New tab"
+          active={false}
+          theme={theme}
+        >
+          <Plus size={14} />
+        </ToolbarIconButton>
         <SharePanel
           shareState={shareState}
           shareUrl={shareUrl}
