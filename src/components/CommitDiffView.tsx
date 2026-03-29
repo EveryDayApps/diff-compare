@@ -225,6 +225,9 @@ function DiffContent({ file, viewMode, showMinimap }: {
   viewMode: ViewMode
   showMinimap: boolean
 }) {
+  if (file.status === 'added' && file.original === '') {
+    return <NewFileViewer content={file.modified} />
+  }
   if (viewMode === 'unified') {
     return <UnifiedDiffViewer lines={file.lines} wrapLines={true} showMinimap={showMinimap} />
   }
@@ -235,6 +238,22 @@ function DiffContent({ file, viewMode, showMinimap }: {
       wrapLines={true}
       showMinimap={showMinimap}
     />
+  )
+}
+
+function NewFileViewer({ content }: { content: string }) {
+  const lines = content.split('\n')
+  return (
+    <div className="flex flex-1 overflow-hidden relative">
+      <div className="font-mono text-sm overflow-auto flex-1 animate-fade-in">
+        {lines.map((line, i) => (
+          <div key={i} className="diff-line line-equal">
+            <span className="diff-line-number">{i + 1}</span>
+            <span className="diff-line-content">{line}</span>
+          </div>
+        ))}
+      </div>
+    </div>
   )
 }
 
