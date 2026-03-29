@@ -55,7 +55,7 @@ export function CommitInfoBar({
         'flex items-center rounded-lg p-0.5 gap-0.5 shrink-0',
         isDark ? 'bg-surface-border/50' : 'bg-gray-100'
       )}>
-        {(['tabs', 'stacked', 'single'] as FileDisplayMode[]).map(mode => (
+        {(['tabs', 'stacked'] as FileDisplayMode[]).map(mode => (
           <button
             key={mode}
             onClick={() => onFileDisplayModeChange(mode)}

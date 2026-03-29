@@ -1,3 +1,4 @@
+import { useState, useCallback, useEffect } from 'react'
 import { type DiffLine, type DiffStats } from '../lib/diff-utils'
 import { type CommitFile } from '../lib/github-utils'
 import { cn } from '../lib/utils'
@@ -12,6 +13,8 @@ export interface CommitFileDiff extends CommitFile {
   stats: DiffStats
 }
 
+export type StackedControls = { toggle: () => void }
+
 interface CommitDiffViewProps {
   files: CommitFileDiff[]
   viewMode: ViewMode
@@ -20,6 +23,8 @@ interface CommitDiffViewProps {
   onFileSelect: (index: number) => void
   showMinimap: boolean
   isDark: boolean
+  stackedControlsRef?: { current: StackedControls | null }
+  onStackedExpandedChange?: (allExpanded: boolean) => void
 }
 
 export function CommitDiffView({
@@ -30,20 +35,16 @@ export function CommitDiffView({
   onFileSelect,
   showMinimap,
   isDark,
+  stackedControlsRef,
+  onStackedExpandedChange,
 }: CommitDiffViewProps) {
   if (files.length === 0) return null
 
   if (displayMode === 'stacked') {
-    return (
-      <div className="h-full overflow-y-auto flex flex-col gap-3 p-3">
-        {files.map((file) => (
-          <FileSection key={file.filename} file={file} viewMode={viewMode} isDark={isDark} />
-        ))}
-      </div>
-    )
+    return <StackedView files={files} viewMode={viewMode} isDark={isDark} controlsRef={stackedControlsRef} onExpandedChange={onStackedExpandedChange} />
   }
 
-  const activeFile = files[displayMode === 'single' ? 0 : activeFileIndex] ?? files[0]
+  const activeFile = files[activeFileIndex] ?? files[0]
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
@@ -105,25 +106,91 @@ function FileTabs({ files, activeIndex, onSelect, isDark }: {
   )
 }
 
-function FileSection({ file, viewMode, isDark }: {
+function StackedView({ files, viewMode, isDark, controlsRef, onExpandedChange }: {
+  files: CommitFileDiff[]
+  viewMode: ViewMode
+  isDark: boolean
+  controlsRef?: { current: StackedControls | null }
+  onExpandedChange?: (allExpanded: boolean) => void
+}) {
+  const defaultOpen = files.length <= 4
+  const [openMap, setOpenMap] = useState<Record<string, boolean>>(() =>
+    Object.fromEntries(files.map(f => [f.filename, defaultOpen]))
+  )
+
+  useEffect(() => {
+    onExpandedChange?.(files.every(f => openMap[f.filename]))
+  }, [openMap, files, onExpandedChange])
+
+  const toggle = useCallback((filename: string) => {
+    setOpenMap(prev => ({ ...prev, [filename]: !prev[filename] }))
+  }, [])
+
+  useEffect(() => {
+    if (controlsRef) {
+      controlsRef.current = {
+        toggle: () => setOpenMap(prev => {
+          const allOpen = files.every(f => prev[f.filename])
+          return Object.fromEntries(files.map(f => [f.filename, !allOpen]))
+        }),
+      }
+    }
+  })
+
+  return (
+    <div className="h-full overflow-y-auto">
+      <div className="flex flex-col gap-2 p-3">
+        {files.map((file) => (
+          <FileSection
+            key={file.filename}
+            file={file}
+            viewMode={viewMode}
+            isDark={isDark}
+            isOpen={!!openMap[file.filename]}
+            onToggle={() => toggle(file.filename)}
+          />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function FileSection({ file, viewMode, isDark, isOpen, onToggle }: {
   file: CommitFileDiff
   viewMode: ViewMode
   isDark: boolean
+  isOpen: boolean
+  onToggle: () => void
 }) {
   const displayName = file.previousFilename
     ? `${file.previousFilename} → ${file.filename}`
     : file.filename
+
+  const isBinary = file.original === '' && file.modified === ''
 
   return (
     <div className={cn(
       'rounded-lg border overflow-hidden',
       isDark ? 'border-surface-border' : 'border-surfaceLight-border'
     )}>
-      <div className={cn(
-        'flex items-center justify-between px-3 py-2 border-b text-xs',
-        isDark ? 'bg-surface-raised border-surface-border' : 'bg-gray-50 border-surfaceLight-border'
-      )}>
+      <button
+        onClick={onToggle}
+        className={cn(
+          'w-full flex items-center justify-between px-3 py-2 text-xs text-left transition-colors',
+          isDark
+            ? 'bg-surface-raised hover:bg-white/5'
+            : 'bg-gray-50 hover:bg-gray-100',
+          isOpen && (isDark ? 'border-b border-surface-border' : 'border-b border-surfaceLight-border')
+        )}
+      >
         <div className="flex items-center gap-2 min-w-0">
+          {/* Chevron */}
+          <svg
+            className={cn('w-3 h-3 shrink-0 transition-transform', isDark ? 'text-white/30' : 'text-gray-400', isOpen && 'rotate-90')}
+            fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+          </svg>
           <StatusDot status={file.status} />
           <span className={cn('font-mono truncate', isDark ? 'text-white/80' : 'text-gray-700')}>
             {displayName}
@@ -132,19 +199,22 @@ function FileSection({ file, viewMode, isDark }: {
         <div className="flex items-center gap-2 shrink-0 text-[11px]">
           {file.additions > 0 && <span className="text-green-400">+{file.additions}</span>}
           {file.deletions > 0 && <span className="text-red-400">-{file.deletions}</span>}
+          {isBinary && (
+            <span className={cn('italic', isDark ? 'text-white/30' : 'text-gray-400')}>binary</span>
+          )}
         </div>
-      </div>
-      {file.original === '' && file.modified === '' ? (
-        <div className={cn(
-          'px-4 py-3 text-xs italic',
-          isDark ? 'text-white/30' : 'text-gray-400'
-        )}>
-          Binary file — no diff available
-        </div>
-      ) : (
-        <div className="max-h-96 overflow-y-auto">
+      </button>
+      {isOpen && (
+        isBinary ? (
+          <div className={cn(
+            'px-4 py-3 text-xs italic',
+            isDark ? 'text-white/30' : 'text-gray-400'
+          )}>
+            Binary file — no diff available
+          </div>
+        ) : (
           <DiffContent file={file} viewMode={viewMode} showMinimap={false} />
-        </div>
+        )
       )}
     </div>
   )

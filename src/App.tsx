@@ -1,7 +1,7 @@
 import { AlignLeft, Maximize2, Minimize2, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AnimationModal } from './components/AnimationModal'
-import { CommitDiffView, type CommitFileDiff } from './components/CommitDiffView'
+import { CommitDiffView, type CommitFileDiff, type StackedControls } from './components/CommitDiffView'
 import { CommitImportModal } from './components/CommitImportModal'
 import { CommitInfoBar } from './components/CommitInfoBar'
 import { DiffSettings, type DiffSettingsState } from './components/DiffSettings'
@@ -61,6 +61,9 @@ const _initialTab = createTab({ original: file1, modified: file2 })
 
 export default function App() {
   const { theme, selectedTheme, setTheme, isDark } = useTheme()
+
+  const stackedControlsRef = useRef<StackedControls | null>(null)
+  const [stackedAllExpanded, setStackedAllExpanded] = useState(false)
 
   // ── Tab state ──────────────────────────────────────────────────────────────
   const [tabs, setTabs] = useState<DiffTabState[]>([_initialTab])
@@ -408,9 +411,15 @@ export default function App() {
 
           {/* Right: expand/collapse + settings */}
           <div className="flex-1 flex justify-end items-center gap-2">
-            {!commitInfo && (
+            {(!commitInfo || (commitInfo && fileDisplayMode === 'stacked')) && (
               <button
-                onClick={() => setIsExpanded(!isExpanded)}
+                onClick={() => {
+                  if (commitInfo && fileDisplayMode === 'stacked') {
+                    stackedControlsRef.current?.toggle()
+                  } else {
+                    setIsExpanded(!isExpanded)
+                  }
+                }}
                 style={{ display: isMaximized ? 'none' : undefined }}
                 className={cn(
                   "flex items-center gap-1.5 px-2 py-1 text-xs font-medium rounded transition-colors",
@@ -420,27 +429,30 @@ export default function App() {
                 )}
                 title={isExpanded ? "Collapse View (Cmd/Ctrl + E)" : "Expand View (Cmd/Ctrl + E)"}
               >
-                {isExpanded ? (
-                  <>
-                    <Minimize2 size={13} /> Collapse
-                    <kbd className={cn(
-                      "ml-1 flex items-center justify-center px-1 py-0.5 rounded font-sans text-[9px] leading-none border",
-                      isDark ? "bg-surface-raised border-surfaceLight-border/20 text-surface-muted" : "bg-gray-100 border-gray-200 text-gray-500"
-                    )}>
-                      {shortcutText}
-                    </kbd>
-                  </>
-                ) : (
-                  <>
-                    <Maximize2 size={13} /> Expand
-                    <kbd className={cn(
-                      "ml-1 flex items-center justify-center px-1 py-0.5 rounded font-sans text-[9px] leading-none border",
-                      isDark ? "bg-surface-raised border-surfaceLight-border/20 text-surface-muted" : "bg-gray-100 border-gray-200 text-gray-500"
-                    )}>
-                      {shortcutText}
-                    </kbd>
-                  </>
-                )}
+                {(commitInfo && fileDisplayMode === 'stacked')
+                  ? stackedAllExpanded
+                    ? <><Minimize2 size={13} /> Collapse</>
+                    : <><Maximize2 size={13} /> Expand</>
+                  : isExpanded
+                    ? <>
+                        <Minimize2 size={13} /> Collapse
+                        <kbd className={cn(
+                          "ml-1 flex items-center justify-center px-1 py-0.5 rounded font-sans text-[9px] leading-none border",
+                          isDark ? "bg-surface-raised border-surfaceLight-border/20 text-surface-muted" : "bg-gray-100 border-gray-200 text-gray-500"
+                        )}>
+                          {shortcutText}
+                        </kbd>
+                      </>
+                    : <>
+                        <Maximize2 size={13} /> Expand
+                        <kbd className={cn(
+                          "ml-1 flex items-center justify-center px-1 py-0.5 rounded font-sans text-[9px] leading-none border",
+                          isDark ? "bg-surface-raised border-surfaceLight-border/20 text-surface-muted" : "bg-gray-100 border-gray-200 text-gray-500"
+                        )}>
+                          {shortcutText}
+                        </kbd>
+                      </>
+                }
               </button>
             )}
             <DiffSettings
@@ -478,6 +490,8 @@ export default function App() {
               onFileSelect={i => updateActiveTab({ activeFileIndex: i })}
               showMinimap={diffSettings.showMinimap}
               isDark={isDark}
+              stackedControlsRef={stackedControlsRef}
+              onStackedExpandedChange={setStackedAllExpanded}
             />
           </div>
         ) : (

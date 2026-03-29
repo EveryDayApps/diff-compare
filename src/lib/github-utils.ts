@@ -5,7 +5,7 @@ export class AuthRequiredError extends Error {
   }
 }
 
-export type FileDisplayMode = 'tabs' | 'stacked' | 'single'
+export type FileDisplayMode = 'tabs' | 'stacked'
 
 export interface CommitFile {
   filename: string
